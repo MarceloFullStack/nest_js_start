@@ -1,44 +1,55 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateGatoDto } from './dto/create-gato.dto';
 import { UpdateGatoDto } from './dto/update-gato.dto';
+import { Gato } from './entities/gato.entity';
 
-const gatus = [{
-  id: 1,
-  name: 'Gato 1',
-  age: 1,
-  breed: ['Persa', 'Siamês'],
-}]
 
 @Injectable()
 export class GatoService {
+
+  constructor(
+    @InjectRepository(Gato)
+    private readonly gatoRepository: Repository<Gato>,
+  ) {}
+
   create(createGatoDto: CreateGatoDto) {
-    gatus.push(createGatoDto);
-    return 'This action adds a new gato';
+    let gato = this.gatoRepository.create(createGatoDto)
+    return this.gatoRepository.save(gato);
   }
 
   findAll() {
-    return gatus;
+    return this.gatoRepository.find();
   }
 
   findOne(id: number) {
-    let encontrado = gatus.find(gato => gato.id === id);
+    let encontrado = this.gatoRepository.findOne(id);
     if (!encontrado) {
       throw new HttpException('Gato não encontrado', HttpStatus.NOT_FOUND);
     }
     return encontrado
   }
 
-  update(id: number, updateGatoDto: UpdateGatoDto) {
-    console.log("chegou na atualizacao")
-    let gatoIndex = gatus.findIndex(gato => gato.id === id);
+  async update(id: number, updateGatoDto: UpdateGatoDto) {
+    let encontrado = await this.gatoRepository.preload(
+      { 
+        id: +id,
+        ...updateGatoDto
+      }
+      );
 
-    gatus[gatoIndex] =  {...gatus[gatoIndex], ...updateGatoDto };
-    return `This action updates a #${id} gato`;
+    if (!encontrado) {
+      throw new HttpException('Gato não encontrado', HttpStatus.NOT_FOUND);
+    }
+    return this.gatoRepository.save(encontrado);
   }
 
-  remove(id: number) {
-    let gatoIndex = gatus.findIndex(gato => gato.id === id);
-    gatus.splice(gatoIndex, 1);
-    return `This action removes a #${id} gato`;
+  async remove(id: number) {
+    let encontrado = await this.gatoRepository.findOne(id);
+    if (!encontrado) {
+      throw new HttpException('Gato não encontrado', HttpStatus.NOT_FOUND);
+    }
+    return this.gatoRepository.remove(encontrado);
   }
 }

@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { IntersectionType, PickType } from '@nestjs/swagger';
 import { CreateGatoDto } from './create-gato.dto';
 
-export class UpdateGatoDto extends PartialType(CreateGatoDto) {}
+export class UpdateGatoDto extends IntersectionType(
+    CreateGatoDto,
+    PickType(CreateGatoDto, ['idade', 'name']),
+) {}
